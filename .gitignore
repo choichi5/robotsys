@@ -1,0 +1,10 @@
+# Simulink / MATLAB build & cache artifacts
+slprj/
+*.slxc
+*.autosave
+*.asv
+*.mex*
+codegen/
+
+# MATLAB session state
+*.mat.autosave
