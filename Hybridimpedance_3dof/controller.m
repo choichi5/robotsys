@@ -33,6 +33,8 @@ global I11;
 global I12;
 global I13;
 global g;
+global x_wall;
+global y_ground;
 
 % Cumulative angles and their rates %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 q1      = q11;
@@ -132,7 +134,9 @@ Matrix_dJ    = [ dJ11 dJ12 dJ13
                  dJ31 dJ32 dJ33
                ];
 % Inverse Jacobian Matrix [3 X 3] %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Matrix_INVJ    = inv(Matrix_J);
+% pinv 를 쓰는 이유: 팔이 완전히 펴진 초기자세에서 J 가 특이하다.
+% (이 블록은 통과용이라 실제로 쓰이지는 않는다)
+Matrix_INVJ    = pinv(Matrix_J);
 % Proportional Gain Matrix [3 X 3] %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %K_d    = [ 5 0 0
 %           0 5 0

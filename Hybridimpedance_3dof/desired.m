@@ -1,42 +1,45 @@
 % Desired task-space trajectory  ---  3 DOF planar manipulator
-% Cubic (3rd order) polynomial in x and y, constant orientation phi = pi
-% so that the end-effector stays normal to the wall at x = -0.5.
+% Quintic (5th order) polynomial in x, y and phi.
+%
+% The profile is quintic rather than cubic because the arm starts fully
+% extended, which is a singular configuration. A quintic has zero velocity AND
+% zero acceleration at t = 0, so no task-space acceleration is demanded while
+% the Jacobian is still rank deficient.
 %
 % IN  = t                                       (1 x 1)
 % OUT = [xd yd phid  vx vy vphi  ax ay aphi]    (1 x 9)
 
 function [OUT] = read(IN)
 
+global x_wall;
+
 now = IN(1);
 
-% Initial pose from init.m : q = (30, 60, 110) deg
-q1_0    = 30.0*pi/180.0;
-q12_0   = 30.0*pi/180.0+60.0*pi/180.0;
-q123_0  = 30.0*pi/180.0+60.0*pi/180.0+110.0*pi/180.0;
+% Initial pose from init.m : q = (90, 0, 0) deg, arm straight up
+q1_0    = 90.0*pi/180.0;
+q12_0   = 90.0*pi/180.0;
+q123_0  = 90.0*pi/180.0;
 
-x_0     = cos(q1_0)+cos(q12_0)+cos(q123_0);     % -0.0737
-y_0     = sin(q1_0)+sin(q12_0)+sin(q123_0);     %  1.1580
-phi_0   = q123_0;                               %  200 deg
+x_0     = cos(q1_0)+cos(q12_0)+cos(q123_0);     %  0.0
+y_0     = sin(q1_0)+sin(q12_0)+sin(q123_0);     %  3.0
+phi_0   = q123_0;                               %  90 deg
 
-% Final pose : 0.5 m into the wall (x = -0.5), slid down along it,
-% tool rotated to phi = 180 deg so it ends up normal to the wall.
-x_f     = -1.0;
-y_f     =  0.5;
+% Final pose : commanded 0.5 m past the wall so the force loop has something
+% to push against, slid down to y = 1.5, tool rotated normal to the wall.
+x_f     = x_wall-0.5;
+y_f     =  1.5;
 phi_f   = pi;
 
 T_final = 2;
 
 if now<=T_final
-    tau = now;
-    % Cubic blending polynomial and its derivatives
-    s   = -2*(tau^3/T_final^3)+3*(tau^2/T_final^2);
-    ds  = -6*(tau^2)/(T_final^3)+6*(tau/(T_final^2));
-    dds = -12*tau/(T_final^3)+6/(T_final^2);
+    tau = now/T_final;
+    % Quintic blending polynomial and its derivatives
+    s   = 10*tau^3-15*tau^4+6*tau^5;
+    ds  = (30*tau^2-60*tau^3+30*tau^4)/T_final;
+    dds = (60*tau-180*tau^2+120*tau^3)/T_final^2;
 else
-    % Hold the final pose. NOTE: unlike the 2 DOF desired.m, the velocity and
-    % acceleration feed-forward are forced to zero here. Evaluating the cubic
-    % at tau = T_final leaves dds = -1.5 ~= 0, i.e. a constant acceleration
-    % command that never stops acting once the motion is finished.
+    % Hold the final pose with zero velocity / acceleration feed-forward.
     s   = 1;
     ds  = 0;
     dds = 0;

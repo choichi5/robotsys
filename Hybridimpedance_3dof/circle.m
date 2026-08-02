@@ -6,9 +6,11 @@
 
 function [OUT] = Time(IN)
 
+global x_wall;
+
 now = IN(1);
 
-center=[-0.5 1];
+center=[x_wall 1.5];
 r=0.5;
 T=4;
 phi_d = pi;

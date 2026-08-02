@@ -58,6 +58,8 @@ global I11;
 global I12;
 global I13;
 global g;
+global x_wall;
+global y_ground;
 
 % Cumulative angles and their rates %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 q1      = q11;
@@ -201,8 +203,8 @@ F_d    = 10;
     % Intf = F_d;
 
 %External Force Matrix [3 X 1] %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if xf<-0.5
-    f_ext_x = -((10^6)*(xf+0.5)+(10^2)*dxf); %10^6인 이유는 벽의 딱딱한 강성
+if xf<x_wall
+    f_ext_x = -((10^6)*(xf-x_wall)+(10^2)*dxf); %10^6인 이유는 벽의 딱딱한 강성
 
     mu = 20;  % 마찰 계수
     f_ext_y = -mu * dxp; %y방향이 0인 이유는 마찰을 안쓰겠다는것
@@ -230,15 +232,70 @@ else
 end
 % 이거 주석풀고 쓰면 벽이 생겨서 외부의 힘이 계측이된다
 
+% Ground Contact [3 X 1] %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 지면(y = y_ground)은 벽과 같은 페널티 접촉 모델로 막는다. 엔드이펙터만이
+% 아니라 팔 전체가 지면 아래로 내려갈 수 없어야 하므로, 각 링크의 중점과
+% 끝점(모두 6점)을 접촉점으로 잡고 각 점에서 나온 힘을 관절 토크로 옮긴다.
+% 제어기는 이 힘을 모른다 -- 순수한 외란으로 작용한다.
+k_g     = 10^6;       % 지면 강성
+d_g     = 10^2;       % 지면 감쇠
+mu_g    = 20;         % 지면 마찰 계수
+
+Ang     = [ q1 ; q12s ; q123 ];
+Lk      = [ Link11 ; Link12 ; Link13 ];
+Pjoint  = zeros(2,4);                       % 관절 원점 (1번 관절은 원점)
+for k = 1:3
+    Pjoint(:,k+1) = Pjoint(:,k)+Lk(k)*[cos(Ang(k)); sin(Ang(k))];
+end
+
+Tau_g   = zeros(3,1);
+F_gnd   = zeros(2,1);
+for k = 1:3
+    for frac = [0.5 1.0]                    % 링크 중점과 끝점
+        r  = frac*Lk(k);
+        p  = Pjoint(:,k)+r*[cos(Ang(k)); sin(Ang(k))];
+        if p(2) < y_ground
+            % 접촉점의 위치 자코비안 [2 X 3]
+            seg      = zeros(3,1);
+            seg(1:k) = Lk(1:k);
+            seg(k)   = r;
+            Jp = zeros(2,3);
+            for i = 1:k
+                for m = i:k
+                    Jp(:,i) = Jp(:,i)+seg(m)*[-sin(Ang(m)); cos(Ang(m))];
+                end
+            end
+            vp    = Jp*dQ;
+            f_gy  = -(k_g*(p(2)-y_ground)+d_g*vp(2));
+            f_gy  = max(f_gy,0);            % 지면은 밀기만 하고 당기지 않는다
+            f_gx  = -mu_g*vp(1);
+            Tau_g = Tau_g+Jp'*[f_gx; f_gy];
+            F_gnd = F_gnd+[f_gx; f_gy];
+        end
+    end
+end
+
 % Robot Dynamics [3 X 1] %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % dd_x = 0;
-dd_q   = Matrix_J\(dd_x-Matrix_dJ*dQ);
+% 팔이 완전히 펴진 특이자세에서 출발하므로 J를 그대로 역행렬하면 발산한다.
+% 최소 특이값이 eps_dls 아래로 내려가면 감쇠최소자승(DLS)으로 전환한다.
+eps_dls = 0.10;
+lam_0   = 0.05;
+sig_min = min(svd(Matrix_J));
+if sig_min < eps_dls
+    lam2 = lam_0^2*(1-(sig_min/eps_dls)^2);
+else
+    lam2 = 0;
+end
+dd_q   = (Matrix_J'*Matrix_J+lam2*eye(3))\(Matrix_J'*(dd_x-Matrix_dJ*dQ));
 Matrix_Torque = Matrix_H*dd_q  +Matrix_S+Matrix_G-Matrix_J'*F_ext ;
 
-FF = Matrix_J'\(Matrix_H*dd_q  +Matrix_S+Matrix_G-Matrix_Torque) ;
+% 접촉 렌치 재계산. J' 도 특이자세에서 그대로 나눌 수 없으므로 같은 DLS 사용.
+FF = (Matrix_J*Matrix_J'+lam2*eye(3))\(Matrix_J*(Matrix_H*dd_q  +Matrix_S+Matrix_G-Matrix_Torque)) ;
 
 % Angular Acceleration [3 X 1] %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-ddQ     = Matrix_H\(Matrix_Torque-Matrix_S-Matrix_G+Matrix_J'*F_ext);
+% 지면 반력 Tau_g 는 제어기가 보상하지 않는 외란으로 더해진다
+ddQ     = Matrix_H\(Matrix_Torque-Matrix_S-Matrix_G+Matrix_J'*F_ext+Tau_g);
 
 % OUTPUT
 OUT     = [ X        % 3X1 matrix

@@ -17,6 +17,8 @@ global I13;
 %global k_p;
 %global k_d;
 global g;
+global x_wall;
+global y_ground;
 
 %%%%%%% 파라미터 읽어들이기 %%%%%%%
 init

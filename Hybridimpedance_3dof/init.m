@@ -25,18 +25,28 @@ I11     = Mass11*Link11^2/12.0;
 I12     = Mass12*Link12^2/12.0;
 I13     = Mass13*Link13^2/12.0;
 
+% ----- Environment ------------------------------------------------------
+% Wall : vertical plane at x = x_wall. Moved out from -0.5 (the 2 DOF value)
+% because a 3 link arm reaches 3 m and was starting almost on top of it.
+x_wall   = -1.5;
+% Ground : horizontal plane at y = y_ground. No part of the arm may go below
+% it; enforced by the penalty contact model in Dynamics.m.
+y_ground =  0.0;
+
 %%% straight line
-% (30, 60, 110) deg  ->  X0 = [-0.074 ; 1.158 ; 200 deg]
-% Starts clear of the wall (x0 > -0.5) and 20 deg off normal, so the third
-% DOF has to rotate the tool to phi = 180 deg while the arm approaches.
-q11     = 30.0*pi/180.0;
-q12     = 60.0*pi/180.0;
-q13     = 110.0*pi/180.0;
+% (90, 0, 0) deg -> arm fully extended along +y,  X0 = [0 ; 3 ; 90 deg]
+% NOTE: a fully extended planar arm is a SINGULAR configuration (det J = 0,
+% the arm cannot accelerate along its own axis). Two things make this a legal
+% starting point: desired.m uses a quintic profile, whose acceleration is zero
+% at t = 0, and Dynamics.m inverts the Jacobian by damped least squares.
+q11     = 90.0*pi/180.0;
+q12     =  0.0*pi/180.0;
+q13     =  0.0*pi/180.0;
 
 %%% circle input
-%q11     = 30.0*pi/180.0;
-%q12     = 60.0*pi/180.0;
-%q13     = 110.0*pi/180.0;
+%q11     = 90.0*pi/180.0;
+%q12     =  0.0*pi/180.0;
+%q13     =  0.0*pi/180.0;
 
 Q      = [ q11
            q12
