@@ -2,6 +2,9 @@
 
 3-link planar manipulator extension of `Hybridimpedance_re`.
 
+> 한국어로 된 자세한 설명은 **[GUIDE.md](GUIDE.md)** 를 보세요. 이 README 는
+> 구조·수치 요약이고, GUIDE 는 왜 이렇게 만들었는지까지 풀어 쓴 문서입니다.
+
 ## Task space
 
 | | 2 DOF (`Hybridimpedance_re`) | 3 DOF (this folder) |
@@ -60,9 +63,10 @@ in `x`, viscous friction in `y`, zero contact moment.
 
 Start `q = (90°, 0°, 0°)` — arm fully extended along `+y`, so
 `X0 = [0 ; 3 ; 90°]`. A quintic trajectory drives the tool to
-`[-2.0 ; 1.5 ; 180°]` over 2 s. The commanded `x` is 0.5 m *past* the wall, so
-the arm reaches the wall at `t ≈ 1.30 s`, the force loop takes over in `x`, and
-the tool ends up normal to the wall holding 10 N at `y = 1.5`.
+`[-2.0 ; 0.5 ; 180°]` over 2 s. The commanded `x` is 0.5 m *past* the wall, so
+the arm reaches the wall at `t ≈ 1.30 s` (at `y ≈ 1.13`), the force loop takes
+over in `x`, and the tool then slides about **0.63 m** down the wall face to
+`y = 0.5` while holding 10 N.
 
 ### Singularity at the start pose
 
@@ -96,7 +100,7 @@ cannot accelerate along its own axis. Straight up along `+y`, the second row of
 | `circle.m` | same circular path, `OUT` 1×9 with `phi_d = pi` |
 | `Dynamics.m` | 3×3 `H`, Christoffel-based `S`, 3×1 `G`, 3×3 `J`/`dJ`; ground contact; DLS inverse; `IN` 22×1, `OUT` 19×1 |
 | `controller.m` | same matrices, `pinv` instead of `inv`; pass-through `IN`/`OUT` 22×1 |
-| `test_avi.m` | draws three links, the wall at `x_wall` and the ground at `y_ground` |
+| `test_avi.m` | full robot-arm rendering: per-link colours, joint caps, base, gripper, wall/ground hatching, tool trail, live force readout |
 | `run.m` | new `data` column layout, extra orientation subplot |
 | `Impedance_model.mdl` | all Mux/Demux widths and MATLAB Fcn output dimensions rescaled |
 

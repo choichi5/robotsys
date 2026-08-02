@@ -25,9 +25,10 @@ y_0     = sin(q1_0)+sin(q12_0)+sin(q123_0);     %  3.0
 phi_0   = q123_0;                               %  90 deg
 
 % Final pose : commanded 0.5 m past the wall so the force loop has something
-% to push against, slid down to y = 1.5, tool rotated normal to the wall.
+% to push against, slid down to y = 0.5, tool rotated normal to the wall.
+% The tool meets the wall at y ~ 1.13, so it slides ~0.63 m down the face.
 x_f     = x_wall-0.5;
-y_f     =  1.5;
+y_f     =  0.5;
 phi_f   = pi;
 
 T_final = 2;

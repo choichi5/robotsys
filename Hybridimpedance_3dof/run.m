@@ -41,27 +41,45 @@ test_avi
 %  11:13  : Fx, Fy, Mz         (contact wrench)
 
 figure;
-subplot(3,1,1);
+subplot(4,1,1);
 plot(data(:,1), data(:,2),'-r',data(:,1), data(:,3),'-b', ...
      data(:,1), data(:,5),'--r',data(:,1), data(:,6),'--b');
 %title('Position trajectory');
 %ylim([-30 30]);
+yline(x_wall,':k','wall');
 legend('x','y','x_{d}','y_{d}');
 xlabel('time[sec]');
 ylabel('Position trajectories[m]');
 grid on;
 
-subplot(3,1,2);
+subplot(4,1,2);
 plot(data(:,1), data(:,4)*180/pi,'-k', data(:,1), data(:,7)*180/pi,'--k');
 legend('\phi','\phi_{d}');
 xlabel('time[sec]');
 ylabel('Orientation[deg]');
 grid on;
 
-subplot(3,1,3);
+subplot(4,1,3);
 plot(data(:,1), data(:,11),'-r', data(:,1), data(:,12),'-b');
 xlabel('time[sec]');
 ylabel('Contact Force[N]');
 legend('x direction','y direction');
-ylim([-10 110]);
+ylim([-20 130]);
+grid on;
+
+% 관절 높이 : 팔의 어느 부분도 지면(y = y_ground) 아래로 내려가지 않는지 확인
+qr = data(:,8:10)*pi/180;
+ang = [qr(:,1), qr(:,1)+qr(:,2), qr(:,1)+qr(:,2)+qr(:,3)];
+Lk = [Link11 Link12 Link13];
+hj = zeros(size(qr,1),4);
+for k = 1:3
+    hj(:,k+1) = hj(:,k)+Lk(k)*sin(ang(:,k));
+end
+subplot(4,1,4);
+plot(data(:,1), hj(:,2),'-g', data(:,1), hj(:,3),'-', ...
+     data(:,1), hj(:,4),'-m');
+yline(y_ground,'-k','ground','LineWidth',1.5);
+legend('elbow J2','wrist J3','end-effector');
+xlabel('time[sec]');
+ylabel('Joint height[m]');
 grid on;
