@@ -247,8 +247,8 @@ $$
 ```mermaid
 flowchart LR
     D["desired.m<br/>quintic Xd, dXd, ddXd"] --> SW{"x &lt; x_wall ?"}
-    SW -- "NO (자유공간)" --> FS["ddx = ddXd + Kd*edot + Kp*e<br/>순수 위치 제어"]
-    SW -- "YES (접촉)" --> HY["x : 힘 PI 제어 (Fd = 10N)<br/>y : 위치 PD 제어<br/>phi : 자세 PD 제어"]
+    SW -->|"NO · 자유공간"| FS["ddx = ddXd + Kd*edot + Kp*e<br/>순수 위치 제어"]
+    SW -->|"YES · 접촉"| HY["x : 힘 PI 제어 (Fd = 10N)<br/>y : 위치 PD 제어<br/>phi : 자세 PD 제어"]
     FS --> RA
     HY --> RA["분해가속도 (DLS)<br/>ddq = (J'J + lam2 I)^-1 J'(ddx - dJ dq)"]
     RA --> CT["계산토크<br/>tau = H ddq + C dq + G - J' Fext"]
@@ -256,8 +256,8 @@ flowchart LR
     RB --> FK["direct_kinematics.m<br/>X, dX"]
     FK --> SW
     RB --> ENV["벽 / 지면 페널티 접촉 모델"]
-    ENV -- "Fext, tau_g" --> RB
-    ENV -- "f_ext,x" --> HY
+    ENV -->|"Fext, tau_g"| RB
+    ENV -->|"f_ext,x"| HY
 ```
 
 ---
